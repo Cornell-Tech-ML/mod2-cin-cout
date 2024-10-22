@@ -25,26 +25,91 @@ def central_difference(f: Any, *vals: Any, arg: int = 0, epsilon: float = 1e-6) 
         An approximation of $f'_i(x_0, \ldots, x_{n-1})$
 
     """
-    raise NotImplementedError("Need to include this file from past assignment.")
+    # TODO: Implement for Task 1.1.
+    vals1 = [v for v in vals]
+    vals2 = [v for v in vals]
+    vals1[arg] = vals1[arg] + epsilon
+    vals2[arg] = vals2[arg] - epsilon
+    delta = f(*vals1) - f(*vals2)
+    return delta / (2 * epsilon)
 
 
 variable_count = 1
 
 
 class Variable(Protocol):
-    def accumulate_derivative(self, x: Any) -> None: ...
+    def accumulate_derivative(self, x: Any) -> None:
+        """Accumulate the derivative on this variable.
+
+        Parameters
+        ----------
+        x : Any
+            Value to accumulate.
+
+        """
+        ...
 
     @property
-    def unique_id(self) -> int: ...
+    def unique_id(self) -> int:
+        """Unique identifier for the variable.
 
-    def is_leaf(self) -> bool: ...
+        Returns
+        -------
+        int
+            The unique identifier for this variable.
 
-    def is_constant(self) -> bool: ...
+        """
+        ...
+
+    def is_leaf(self) -> bool:
+        """Check if this variable is a leaf node.
+
+        Returns
+        -------
+        bool
+            True if this is a leaf variable.
+
+        """
+        ...
+
+    def is_constant(self) -> bool:
+        """Check if this variable is constant.
+
+        Returns
+        -------
+        bool
+            True if the variable is constant.
+
+        """
+        ...
 
     @property
-    def parents(self) -> Iterable["Variable"]: ...
+    def parents(self) -> Iterable["Variable"]:
+        """Get the parent variables of this variable.
 
-    def chain_rule(self, d_output: Any) -> Iterable[Tuple[Variable, Any]]: ...
+        Returns
+        -------
+        Iterable[Variable]
+            Parent variables.
+
+        """
+        ...
+
+    def chain_rule(self, d_output: Any) -> Iterable[Tuple[Variable, Any]]:
+        """Apply the chain rule to propagate the derivative backward.
+
+        Parameters
+        ----------
+        d_output : Any
+            The upstream derivative.
+
+        Returns
+        -------
+        Iterable[Tuple[Variable, Any]]
+            The chain of variables and their derivatives.
+
+        """
+        ...
 
 
 def topological_sort(variable: Variable) -> Iterable[Variable]:
@@ -59,22 +124,62 @@ def topological_sort(variable: Variable) -> Iterable[Variable]:
         Non-constant Variables in topological order starting from the right.
 
     """
-    raise NotImplementedError("Need to include this file from past assignment.")
+    # TODO: Implement for Task 1.4.
+    visited = set()
+    sorted_variables: List[Variable] = []
+
+    def dfs(v: Variable) -> None:
+        """Performs depth-first search for topological sort.
+
+        Parameters
+        ----------
+        v : Variable
+            The current variable in the graph.
+
+        """
+        if v in visited or v.is_constant():
+            return
+        visited.add(v)
+        # Recurse on parents
+        for parent in v.parents:
+            dfs(parent)
+        # Append the current variable
+        sorted_variables.append(v)
+
+    # Start DFS from the right-most variable
+    dfs(variable)
+
+    return reversed(sorted_variables)  # Reverse for topological order
 
 
 def backpropagate(variable: Variable, deriv: Any) -> None:
     """Runs backpropagation on the computation graph in order to
     compute derivatives for the leave nodes.
 
-    Args:
-    ----
-        variable: The right-most variable
-        deriv  : Its derivative that we want to propagate backward to the leaves.
-
-    No return. Should write to its results to the derivative values of each leaf through `accumulate_derivative`.
+    Parameters
+    ----------
+    variable : Variable
+        The variable to backpropagate from.
+    deriv : Any
+        The derivative to propagate.
 
     """
-    raise NotImplementedError("Need to include this file from past assignment.")
+    # TODO: Implement for Task 1.4.
+    sorted_variables = topological_sort(variable)
+
+    derivatives = {variable: deriv}
+
+    for var in sorted_variables:
+        if var.is_leaf():
+            var.accumulate_derivative(derivatives[var])
+        else:
+            d_output = derivatives[var]
+
+            for parent, local_derivative in var.chain_rule(d_output):
+                if parent in derivatives:
+                    derivatives[parent] += local_derivative
+                else:
+                    derivatives[parent] = local_derivative
 
 
 @dataclass
@@ -92,4 +197,12 @@ class Context:
 
     @property
     def saved_tensors(self) -> Tuple[Any, ...]:
+        """Retrieve the saved tensors from the forward pass.
+
+        Returns
+        -------
+        Tuple[Any, ...]
+            The saved values from the forward pass used for backpropagation.
+
+        """
         return self.saved_values
