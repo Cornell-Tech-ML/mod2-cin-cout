@@ -12,6 +12,47 @@ def RParam(*shape):
     return minitorch.Parameter(r)
 
 # TODO: Implement for Task 2.5.
+# Network with three linear layers
+class Network(minitorch.Module):
+    def __init__(self, hidden_layers):
+        super().__init__()
+        # Three layers: (2 -> hidden, hidden -> hidden, hidden -> output)
+        self.layer1 = Linear(2, hidden_layers)
+        self.layer2 = Linear(hidden_layers, hidden_layers)
+        self.layer3 = Linear(hidden_layers, 1)
+
+    def forward(self, x):
+        middle = self.layer1.forward(x).relu()
+        middle2 = self.layer2.forward(middle).relu()
+        out = self.layer3.forward(middle2).sigmoid()
+        return out
+
+
+# Linear layer class for tensor operations
+class Linear(minitorch.Module):
+    def __init__(self, in_size, out_size):
+        super().__init__()
+        # Initialize weights and bias for the linear layer
+        self.weights = RParam(in_size, out_size)  # Random weight initialization
+        self.bias = RParam(out_size)  # Random bias initialization
+        self.out_size = out_size
+
+    def forward(self, inputs):
+        # Perform linear transformation: weights * inputs + bias
+
+        inputs = inputs.view(inputs.shape[0], inputs.shape[1], 1)
+
+        weights = self.weights.value
+        bias = self.bias.value
+
+        multiplied = inputs * weights
+        reduced_sum = multiplied.sum(1)
+
+        bias = bias.view(1, bias.shape[0])
+        output = reduced_sum + bias
+
+        return output.view(output.shape[0], output.shape[2])
+
 
 def default_log_fn(epoch, total_loss, correct, losses):
     print("Epoch ", epoch, " loss ", total_loss, "correct", correct)
